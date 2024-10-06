@@ -6,7 +6,7 @@
 /*   By: okraus <okraus@student.42prague.com>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/03 15:21:08 by okraus            #+#    #+#             */
-/*   Updated: 2024/10/03 16:23:35 by okraus           ###   ########.fr       */
+/*   Updated: 2024/10/06 17:27:51 by okraus           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,10 +15,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
- #include <time.h>
+#include <time.h>
 
-
-//cc main.c get_next_line.c get_next_line_utils.c -Wl,-wrap,malloc -Wl,-wrap,free
+//cc main.c get_next_line.c get_next_line_utils.c -g -Wl,-wrap,malloc -Wl,-wrap,free
 
 /* 
  * Link-time interposition of malloc and free using the static
@@ -30,31 +29,31 @@
  * __real_free as free.
  */
 
-void *__real_malloc(size_t size);
-void __real_free(void *ptr);
-
+void	*__real_malloc(size_t size);
+void	__real_free(void *ptr);
 
 /* 
  * __wrap_malloc - malloc wrapper function 
  */
-void *__wrap_malloc(size_t size)
+void	*__wrap_malloc(size_t size)
 {
-	void *ptr;
+	void	*ptr;
+
 	if (rand() % 42)
 		ptr = __real_malloc(size);
 	else
 		ptr = NULL;
 	dprintf(2, "malloc(%zu) = %p\n", size, ptr);
-	return ptr;
+	return (ptr);
 }
 
 /* 
  * __wrap_free - free wrapper function 
  */
-void __wrap_free(void *ptr)
+void	__wrap_free(void *ptr)
 {
-	__real_free(ptr);
 	dprintf(2, "free(%p)\n", ptr);
+	__real_free(ptr);
 }
 
 char	*get_next_line(int fd);
@@ -72,7 +71,7 @@ int	main(int argc, char *argv[])
 	line = get_next_line(fd);
 	while (line)
 	{
-		printf("fd: %d | %s\n", fd, line);
+		printf("fd: %d | %s", fd, line);
 		free(line);
 		line = get_next_line(fd);
 	}
