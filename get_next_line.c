@@ -6,41 +6,13 @@
 /*   By: okraus <okraus@student.42prague.com>       +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/01/28 12:37:57 by okraus            #+#    #+#             */
-/*   Updated: 2024/10/07 10:50:07 by okraus           ###   ########.fr       */
+/*   Updated: 2024/10/17 09:39:34 by okraus           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-//ulimit -s 64000000 ??
-
-// typedef	struct s_gnl
-// {
-// 	char	leftover[1024][BUFFER_SIZE];
-// 	size_t	size_l[1024];
-// 	char	*temp;
-// 	size_t	size_temp;
-// 	size_t	length_temp;
-// 	char	*line;
-// } t_gnl;
-
-void	gnl_create_line(t_gnl *gnl)
-{
-	int	i;
-
-	i = -1;
-	if (gnl->temp && gnl->length_temp)
-	{
-		gnl->line = malloc(gnl->length_temp + 1);
-		while (gnl->line && ++i < gnl->length_temp)
-			gnl->line[i] = gnl->temp[i];
-		if (gnl->line)
-			gnl->line[i] = '\0';
-	}
-	free(gnl->temp);
-}
-
-void	gnl_double_temp(t_gnl *gnl, int *iter)
+static void	gnl_double_temp(t_gnl *gnl, int *iter)
 {
 	int	i;
 
@@ -60,21 +32,37 @@ void	gnl_double_temp(t_gnl *gnl, int *iter)
 	}
 }
 
-void	gnl_init_read_file(t_gnl *gnl, int r)
+static void	gnl_read_file_extra(t_gnl *gnl, int r, int mod)
 {
-	gnl->temp = malloc(BUFFER_SIZE * 2);
-	if (gnl->temp)
-		while (++r < gnl->size_l[gnl->fd])
-			gnl->temp[r] = gnl->leftover[gnl->fd][r];
-	gnl->length_temp = gnl->size_l[gnl->fd];
-	gnl->size_temp = BUFFER_SIZE * 2;
-	gnl->size_l[gnl->fd] = 0;
-	gnl->count_nl[gnl->fd] = 0;
+	if (mod)
+	{
+		r = -1;
+		if (gnl->temp && gnl->length_temp)
+		{
+			gnl->line = malloc(gnl->length_temp + 1);
+			while (gnl->line && ++r < gnl->length_temp)
+				gnl->line[r] = gnl->temp[r];
+			if (gnl->line)
+				gnl->line[r] = '\0';
+		}
+		free(gnl->temp);
+	}
+	else
+	{
+		gnl->temp = malloc(BUFFER_SIZE * 2);
+		if (gnl->temp)
+			while (++r < gnl->size_l[gnl->fd])
+				gnl->temp[r] = gnl->leftover[gnl->fd][r];
+		gnl->length_temp = gnl->size_l[gnl->fd];
+		gnl->size_temp = BUFFER_SIZE * 2;
+		gnl->size_l[gnl->fd] = 0;
+		gnl->count_nl[gnl->fd] = 0;
+	}
 }
 
-void	gnl_read_file(t_gnl *gnl, int r, int i, int iter)
+static void	gnl_read_file(t_gnl *gnl, int r, int i, int iter)
 {
-	gnl_init_read_file(gnl, r);
+	gnl_read_file_extra(gnl, r, 0);
 	r = 1;
 	while (r > 0 && gnl->temp && !gnl->count_nl[gnl->fd])
 	{
@@ -97,10 +85,10 @@ void	gnl_read_file(t_gnl *gnl, int r, int i, int iter)
 			break ;
 		gnl_double_temp(gnl, &iter);
 	}
-	gnl_create_line(gnl);
+	gnl_read_file_extra(gnl, r, 1);
 }
 
-void	gnl_copy_from_leftover(t_gnl *gnl)
+static void	gnl_copy_from_leftover(t_gnl *gnl)
 {
 	int	i;
 	int	j;
@@ -127,18 +115,6 @@ void	gnl_copy_from_leftover(t_gnl *gnl)
 		gnl->leftover[gnl->fd][k] = gnl->leftover[gnl->fd][j + k];
 	gnl->size_l[gnl->fd] = k;
 }
-
-// typedef	struct s_gnl
-// {
-// 	char	leftover[1024][BUFFER_SIZE];
-// 	size_t	size_l[1024];	//how many chars in leftover
-// 	size_t	count_nl[1024];	//how many newlines in leftover
-// 	char	*temp;
-// 	int		fd;
-// 	size_t	size_temp;		//how big is temp
-// 	size_t	length_temp;	//how many chars in temp
-// 	char	*line;
-// } t_gnl;
 
 char	*get_next_line(int fd)
 {
